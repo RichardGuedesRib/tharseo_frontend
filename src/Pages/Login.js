@@ -8,6 +8,8 @@ import {
 } from "../Services/AuthenticateService";
 import { UserContext } from "../Services/UserDataProvider";
 import { useContext } from "react";
+import { GoogleLogin } from "@react-oauth/google";
+import serverConfig from "../Services/ServerConfig";
 
 function Login() {
   const [userLogin, setUserLogin] = useState("");
@@ -15,7 +17,8 @@ function Login() {
   const [firstContainer, setFirstContainer] = useState("");
   const [secondContainer, setSecondContainer] = useState("close");
   const navigate = useNavigate();
-  const { userProfile, wallet, transactions, updateUserData, setUser } = useContext(UserContext);
+  const { userProfile, wallet, transactions, updateUserData, setUser } =
+    useContext(UserContext);
 
   const checkUser = async () => {
     const existsLogin = await checkUserLogin(
@@ -30,8 +33,41 @@ function Login() {
   };
 
   const authenticate = async () => {
-    const checkLogin = await authenticateLogin(userLogin, userPassword, navigate, setUser);
-      };
+    const checkLogin = await authenticateLogin(
+      userLogin,
+      userPassword,
+      navigate,
+      setUser
+    );
+  };
+
+  const handleLogin = async (credentialResponse) => {
+    const token = credentialResponse.credential;
+    
+    try {
+        const response = await fetch( `${serverConfig.addressServerTharseo}/googleauth/auth`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(token), 
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log("Login Successful:", data);
+
+            setUser(data.data); 
+            navigate('/home');
+        } else {
+            const errorData = await response.json();
+            console.error("Login Failed:", errorData.message);
+        }
+    } catch (error) {
+        console.error("Error during login:", error);
+    }
+};
+
 
   useEffect(() => {}, []);
 
@@ -68,6 +104,13 @@ function Login() {
                 </span>
               </span>
             </section>
+
+            <GoogleLogin
+              onSuccess={handleLogin}
+              onFailure={(error) => {
+                console.error("Login Failed:", error);
+              }}
+            />
             <section className="login-select-account">
               <span className="login-select-account-icon">
                 {" "}

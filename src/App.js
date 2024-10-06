@@ -17,6 +17,7 @@ import {
 
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 function App() {
   useEffect(() => {
@@ -39,6 +40,7 @@ function App() {
 
   return (
     <UserDataProvider>
+       <GoogleOAuthProvider clientId="911731612364-j1vi1okll0ep5s7i2o7e395neketn48r.apps.googleusercontent.com">
       <Router>
         <div className="App">
           <Routes>
@@ -97,6 +99,7 @@ function App() {
           </Routes>
         </div>
       </Router>
+      </GoogleOAuthProvider>
     </UserDataProvider>
   );
 }

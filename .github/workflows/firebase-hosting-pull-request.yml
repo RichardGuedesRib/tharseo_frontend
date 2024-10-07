@@ -2,14 +2,29 @@
 # https://github.com/firebase/firebase-tools
 
 name: Deploy to Firebase Hosting on PR
+
 on: pull_request
+
 permissions:
   checks: write
   contents: read
   pull-requests: write
+
 jobs:
+  notify-start:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Telegram - Workflow Started
+        run: |
+          MESSAGE="🚀 Novidades! Um deploy de preview do frontend web do Tharseo foi iniciado para o PR #${{ github.event.number }}... A previsão do término é de 3 minutos."
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="${MESSAGE}" \
+            -d parse_mode="Markdown"
+
   build_and_preview:
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    needs: notify-start
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,3 +34,21 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_THARSEO_C8CB9 }}
           projectId: tharseo-c8cb9
+
+      - name: Notify Telegram - Deploy Success
+        if: success()
+        run: |
+          MESSAGE="✅ Preview do frontend do Tharseo para o PR #${{ github.event.number }} realizado com sucesso! Verifique o resultado no Firebase Hosting em https://tharseocripto.web.app."
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="${MESSAGE}" \
+            -d parse_mode="Markdown"
+
+      - name: Notify Telegram - Deploy Failure
+        if: failure()
+        run: |
+          MESSAGE="🚨 Ocorreu um erro durante o deploy de preview do frontend do Tharseo para o PR #${{ github.event.number }}. Verifique os logs do actions para maiores informações."
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="${MESSAGE}" \
+            -d parse_mode="Markdown"

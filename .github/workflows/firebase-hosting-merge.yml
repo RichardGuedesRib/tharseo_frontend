@@ -2,12 +2,26 @@
 # https://github.com/firebase/firebase-tools
 
 name: Deploy to Firebase Hosting on merge
+
 on:
   push:
     branches:
       - main
+
 jobs:
+  notify-start:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Telegram - Workflow Started
+        run: |
+          MESSAGE="🚀 Um deploy do frontend do Tharseo foi iniciado... A previsão do término é de 2 minutos."
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="${MESSAGE}" \
+            -d parse_mode="Markdown"
+
   build_and_deploy:
+    needs: notify-start
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,3 +32,21 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_THARSEO_C8CB9 }}
           channelId: live
           projectId: tharseo-c8cb9
+
+      - name: Notify Telegram - Deploy Success
+        if: success()
+        run: |
+          MESSAGE="✅ Deploy do frontend do Tharseo realizado com sucesso!"
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="${MESSAGE}" \
+            -d parse_mode="Markdown"
+
+      - name: Notify Telegram - Deploy Failure
+        if: failure()
+        run: |
+          MESSAGE="🚨 Ocorreu um erro durante o deploy do frontend do Tharseo. Verifique os logs do actions para maiores informações."
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="${MESSAGE}" \
+            -d parse_mode="Markdown"
